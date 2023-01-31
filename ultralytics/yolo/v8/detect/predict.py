@@ -1,5 +1,6 @@
 # Ultralytics YOLO 🚀, GPL-3.0 license
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*- 
 import hydra
 import torch
 import argparse
@@ -25,6 +26,11 @@ data_deque = {}
 
 deepsort = None
 
+object_counter = {}
+
+object_counter1 = {}
+
+line = [(0, 310), (768, 170)]
 def init_tracker():
     global deepsort
     cfg_deep = get_config()
@@ -121,9 +127,35 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
 
+def intersect(A,B,C,D):
+    return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
+def ccw(A,B,C):
+    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+
+
+def get_direction(point1, point2):
+    direction_str = ""
+
+    # calculate y axis direction
+    if point1[1] > point2[1]:
+        direction_str += "South"
+    elif point1[1] < point2[1]:
+        direction_str += "North"
+    else:
+        direction_str += ""
+
+    # calculate x axis direction
+    if point1[0] > point2[0]:
+        direction_str += "East"
+    elif point1[0] < point2[0]:
+        direction_str += "West"
+    else:
+        direction_str += ""
+
+    return direction_str
 def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
-    #cv2.line(img, line[0], line[1], (46,162,112), 3)
+    cv2.line(img, line[0], line[1], (46,162,112), 3)
 
     height, width, _ = img.shape
     # remove tracked point from buffer if object is lost
@@ -153,6 +185,20 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
 
         # add center to buffer
         data_deque[id].appendleft(center)
+        if len(data_deque[id]) >= 2:
+          direction = get_direction(data_deque[id][0], data_deque[id][1])
+          if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
+              cv2.line(img, line[0], line[1], (255, 255, 255), 3)
+              if "South" in direction:
+                if obj_name not in object_counter:
+                    object_counter[obj_name] = 1
+                else:
+                    object_counter[obj_name] += 1
+              if "North" in direction:
+                if obj_name not in object_counter1:
+                    object_counter1[obj_name] = 1
+                else:
+                    object_counter1[obj_name] += 1
         UI_box(box, img, label=label, color=color, line_thickness=2)
         # draw trail
         for i in range(1, len(data_deque[id])):
@@ -163,6 +209,21 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
             thickness = int(np.sqrt(64 / float(i + i)) * 1.5)
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
+    
+    #4. Display Count in top right corner
+        for idx, (key, value) in enumerate(object_counter1.items()):
+            cnt_str = str(key) + ":" +str(value)
+            
+            cv2.putText(img, f'Right to Left', (0, height - 25), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_AA)
+            cv2.putText(img, cnt_str, (0, height - 15), 0, 0.41, [0, 0, 255], thickness = 1, lineType = cv2.LINE_AA)
+
+        for idx, (key, value) in enumerate(object_counter.items()):
+            cnt_str1 = str(key) + ":" +str(value)
+            
+            cv2.putText(img, f'Left to Right', (0, height - 45), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_AA)    
+            cv2.putText(img, cnt_str1, (0, height - 35), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_AA)
+       
+    
     return img
 
 
