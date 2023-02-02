@@ -30,7 +30,7 @@ object_counter = {}
 
 object_counter1 = {}
 
-line = [(0, 310), (768, 170)]
+line = [(0, 430), (768, 240)]
 def init_tracker():
     global deepsort
     cfg_deep = get_config()
@@ -152,9 +152,11 @@ def get_direction(point1, point2):
         direction_str += "West"
     else:
         direction_str += ""
-
+    #print(f" DIRECTIONS {direction_str}")
     return direction_str
 def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
+    count_sw = 0
+    count_ne = 0
     cv2.line(img, line[0], line[1], (46,162,112), 3)
 
     height, width, _ = img.shape
@@ -164,6 +166,7 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
         data_deque.pop(key)
 
     for i, box in enumerate(bbox):
+        
         x1, y1, x2, y2 = [int(i) for i in box]
         x1 += offset[0]
         x2 += offset[0]
@@ -186,15 +189,16 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
         # add center to buffer
         data_deque[id].appendleft(center)
         if len(data_deque[id]) >= 2:
+          #print(f"DIRECTIONS {data_deque[id][0]}, {data_deque[id][1]}")
           direction = get_direction(data_deque[id][0], data_deque[id][1])
           if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
               cv2.line(img, line[0], line[1], (255, 255, 255), 3)
-              if "South" in direction:
+              if "South"  in direction:
                 if obj_name not in object_counter:
                     object_counter[obj_name] = 1
                 else:
                     object_counter[obj_name] += 1
-              if "North" in direction:
+              if "North"  in direction:
                 if obj_name not in object_counter1:
                     object_counter1[obj_name] = 1
                 else:
@@ -213,15 +217,17 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
     #4. Display Count in top right corner
         for idx, (key, value) in enumerate(object_counter1.items()):
             cnt_str = str(key) + ":" +str(value)
-            
-            cv2.putText(img, f'Right to Left', (0, height - 25), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_AA)
-            cv2.putText(img, cnt_str, (0, height - 15), 0, 0.41, [0, 0, 255], thickness = 1, lineType = cv2.LINE_AA)
-
+            print(f" COUNT STR {cnt_str}")
+            if key == "person":
+               print
+               cv2.putText(img, f'Right to Left', (0, height - 20), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_8)
+               cv2.putText(img, cnt_str, (0, height - 45), 0, 0.41, [0, 0, 255], thickness = 1, lineType = cv2.LINE_8)
+	       
         for idx, (key, value) in enumerate(object_counter.items()):
             cnt_str1 = str(key) + ":" +str(value)
-            
-            cv2.putText(img, f'Left to Right', (0, height - 45), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_AA)    
-            cv2.putText(img, cnt_str1, (0, height - 35), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_AA)
+            if key == "person":
+               cv2.putText(img, f'Left to Right', (0, height - 70), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_8)    
+               cv2.putText(img, cnt_str1, (0, height - 95), 0, 0.41, [0, 0, 255], thickness=1, lineType=cv2.LINE_8)
        
     
     return img
