@@ -27,7 +27,7 @@ pip install -e '.[dev]'
 cd ultralytics/yolo/v8/detect
 ```
 
-- For yolov8 object detection + Tracking + Vehicle Counting
+- For yolov8 object detection + Tracking + People Counting
 
 ```
 python predict.py model=yolov8l.pt source="PETS09-S2L2-raw.mp4" show=True
